@@ -20,8 +20,15 @@ export default function TodosScreen() {
         "https://jsonplaceholder.typicode.com/todos",
       );
 
+      console.log("Fetch Response:", response); // Log response untuk melihat status dan data yang diterima dari API
+
+      if (!response.ok) {
+        // Jika response tidak OK (misalnya status 404 atau 500), lempar error untuk ditangani di catch block
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       // 2. Ubah response menjadi format JSON dan simpan hasilnya ke dalam state todosList, sehingga daftar todos akan otomatis terupdate di layar
       const todos = await response.json();
+      console.log("Fetched Todos:", todos); // Log hasil fetch untuk melihat data yang diterima dari API
       // 3. Batasi hanya 20 item untuk disimpan di state, agar tidak terlalu banyak data yang ditampilkan
       setTodosList(todos);
     } catch (error) {
