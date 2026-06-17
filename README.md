@@ -1,50 +1,129 @@
-# Welcome to your Expo app 👋
+# ParfumKu
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**ParfumKu** adalah aplikasi mobile penjualan parfum online berbasis **React Native** dan **Expo**. Aplikasi ini dibuat untuk memenuhi tugas Final Project mata kuliah **Pemrograman Mobile 2**.
 
-## Get started
+## Identitas Project
 
-1. Install dependencies
+* Judul Project: ParfumKu
+* Deskripsi: Marketplace Penjualan Parfum
+* Kelas: I243C
+* Project ID: 3
+* Framework: React Native + Expo
+* API: http://shop.bamaha.my.id
 
-   ```bash
-   npm install
-   ```
+## Anggota Kelompok
 
-2. Start the app
+1. Mochamad Riki Aditya Saputra
+2. Farhan Haidar Hidayat
+3. Kevin Athallah Putra
+4. Eliza Putri
 
-   ```bash
-   npx expo start
-   ```
+## Fitur Aplikasi
 
-In the output, you'll find options to open the app in a
+* Registrasi akun
+* Login
+* Home produk
+* Kategori produk
+* Pencarian produk
+* Detail produk
+* Keranjang belanja
+* Checkout
+* Riwayat pembelian
+* Profil pengguna
+* Logout
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Teknologi yang Digunakan
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+* React Native
+* Expo
+* Expo Router
+* TypeScript
+* REST API
+* AsyncStorage
+* GitHub
 
-## Get a fresh project
+## Cara Menjalankan Project
 
-When you're ready, run:
+1. Install dependency:
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Jalankan aplikasi:
 
-## Learn more
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+3. Scan QR Code menggunakan aplikasi **Expo Go** di Android.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Struktur Folder Utama
 
-## Join the community
+```bash
+app/
+├── (tabs)/
+│   ├── index.tsx
+│   ├── cart.tsx
+│   └── profile.tsx
+├── checkout.tsx
+├── product/
+│   └── [id].tsx
+└── _layout.tsx
 
-Join our community of developers creating universal apps.
+components/
+├── ProductCard.tsx
+├── CartItemCard.tsx
+└── OrderCard.tsx
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+context/
+└── ShopContext.tsx
+```
+
+## Screenshot Aplikasi
+
+Tambahkan screenshot aplikasi di bagian ini:
+
+### Login / Register
+
+![Login](./screenshots/login.png)
+
+### Home
+
+![Home](./screenshots/home.png)
+
+### Detail Produk
+
+![Detail Produk](./screenshots/detail-produk.png)
+
+### Keranjang
+
+![Keranjang](./screenshots/cart.png)
+
+### Checkout
+
+![Checkout](./screenshots/checkout.png)
+
+### Profile / Riwayat
+
+![Profile](./screenshots/profile.png)
+
+## Video Demo
+
+Link video demo:
+
+```txt
+Masukkan link Google Drive video demo di sini
+```
+
+## Repository
+
+Link repository GitHub:
+
+```txt
+Masukkan link repository GitHub public di sini
+```
+
+## Kesimpulan
+
+ParfumKu merupakan aplikasi mobile penjualan parfum online yang dibuat menggunakan React Native dan Expo. Aplikasi ini memanfaatkan API untuk proses registrasi, login, pengambilan produk, keranjang belanja, checkout, dan riwayat pembelian.

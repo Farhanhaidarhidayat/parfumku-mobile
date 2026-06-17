@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useShop } from "../../context/ShopContext";
 import OrderCard from "../../components/OrderCard";
+import { useShop } from "../../context/ShopContext";
 
 export default function ProfileScreen() {
   const { purchases, fetchPurchases, user, logout } = useShop();
@@ -28,7 +28,7 @@ export default function ProfileScreen() {
         </View>
         <Text style={styles.profileName}>{user?.name || "Loading..."}</Text>
         <Text style={styles.profileNim}>
-          Role Pembeli | Kelompok Multi-tenant
+          Pembeli ParfumKu
         </Text>
 
         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>

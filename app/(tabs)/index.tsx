@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -10,8 +10,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useShop } from "../../context/ShopContext";
 import ProductCard from "../../components/ProductCard";
+import { useShop } from "../../context/ShopContext";
 
 const { width } = Dimensions.get("window");
 const cardWidth = (width - 40) / 2;
@@ -53,12 +53,12 @@ export default function HomeScreen() {
         <Text style={styles.subGreeting}>
           Halo, {user?.name || "Mahasiswa"}
         </Text>
-        <Text style={styles.mainGreeting}>Proyek Akhir Kelompok Anda</Text>
+        <Text style={styles.mainGreeting}>ParfumKu</Text>
       </View>
 
       {/* 2. Filter Search */}
       <TextInput
-        placeholder="Cari produk di proyek ini..."
+        placeholder="Cari parfum favoritmu..."
         value={search}
         onChangeText={setSearch}
         style={styles.searchBar}

@@ -1,4 +1,3 @@
-import React from "react";
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Product } from "../context/ShopContext";
 
@@ -25,7 +24,7 @@ export default function ProductCard({ product, onPress }: ProductCardProps) {
     >
       {/* Frame Gambar Placeholder */}
       <View style={styles.imagePlaceholder}>
-        <Text style={styles.imagePlaceholderText}>No Image Frame</Text>
+        <Text style={styles.imagePlaceholderText}>Foto Parfum</Text>
       </View>
 
       {/* Detail Informasi Nama Produk */}
@@ -40,7 +39,7 @@ export default function ProductCard({ product, onPress }: ProductCardProps) {
 
       {/* Menampilkan Jumlah Stok Aktif dari Server */}
       <Text style={styles.productStock}>
-        Stok aktif: {product.productStock}
+        Stok tersedia: {product.productStock}
       </Text>
     </TouchableOpacity>
   );

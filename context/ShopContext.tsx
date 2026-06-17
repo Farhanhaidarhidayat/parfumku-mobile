@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { Alert } from "react-native";
 
 // ========================================================
 // 1. DEFINISI TYPE / INTERFACE (MENYESUAIKAN RESPONSE API)
@@ -75,10 +75,10 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const BASE_URL = "https://shop.tandurkarya.com";
+  const BASE_URL = "http://shop.bamaha.my.id";
 
   // ⚠️ GANTI NILAI INI SESUAI DENGAN PROJECT ID KELOMPOK ANDA DI POSTMAN
-  const PROJECT_ID = 13;
+  const PROJECT_ID = 3;
 
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);

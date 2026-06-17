@@ -1,5 +1,5 @@
 import { Stack } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -39,10 +39,10 @@ function RootContent() {
       <ScrollView contentContainerStyle={styles.authContainer}>
         <View style={styles.authCard}>
           <Text style={styles.authTitle}>
-            {isLoginView ? "Sign In Kelompok" : "Register Akun Baru"}
+            {isLoginView ? "Masuk ke ParfumKu" : "Daftar Akun ParfumKu"}
           </Text>
           <Text style={styles.authSubtitle}>
-            Sistem Multi-tenant E-Commerce API
+            ParfumKu - Aplikasi Penjualan Parfum Online
           </Text>
 
           {!isLoginView && (

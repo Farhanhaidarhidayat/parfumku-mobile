@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import {
   FlatList,
   StyleSheet,
@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useShop } from "../../context/ShopContext";
 import CartItemCard from "../../components/CartItemCard";
+import { useShop } from "../../context/ShopContext";
 
 export default function CartScreen() {
   const { cart, updateCartQty, removeFromCart, fetchCart } = useShop();
@@ -27,7 +27,7 @@ export default function CartScreen() {
   if (cart.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>Keranjang belanja API Anda kosong</Text>
+        <Text style={styles.emptyText}>Keranjang belanja Anda kosong</Text>
         <TouchableOpacity
           onPress={() => router.push({ pathname: "/" })}
           style={styles.shopBtn}
@@ -63,7 +63,7 @@ export default function CartScreen() {
           onPress={() => router.push({ pathname: "/checkout" })}
           style={styles.checkoutBtn}
         >
-          <Text style={styles.checkoutBtnText}>Lanjut Ke Pengiriman</Text>
+          <Text style={styles.checkoutBtnText}>Checkout Sekarang</Text>
         </TouchableOpacity>
       </View>
     </View>
