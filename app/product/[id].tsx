@@ -1,6 +1,13 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState } from "react";
+import {
+  Alert,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useShop } from "../../context/ShopContext";
 
 export default function ProductDetailScreen() {
@@ -24,7 +31,9 @@ export default function ProductDetailScreen() {
       Alert.alert("Gagal", "Jumlah melebihi batas stok aktif proyek.");
       return;
     }
+
     const success = await addToCart(product.id, qty);
+
     if (success) {
       Alert.alert("Sukses", "Item berhasil masuk ke keranjang belanja.", [
         { text: "Tetap Disini" },
@@ -35,24 +44,32 @@ export default function ProductDetailScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 1. Default Image Placeholder Frame Gray */}
       <View style={styles.imageBigPlaceholder}>
-        <Text style={styles.imageBigText}>Pratinjau Gambar Produk</Text>
+        {product.productImage ? (
+          <Image
+            source={{ uri: product.productImage }}
+            style={styles.productImageBig}
+            resizeMode="cover"
+          />
+        ) : (
+          <Text style={styles.imageBigText}>Pratinjau Gambar Produk</Text>
+        )}
       </View>
 
-      {/* 2. Identitas Produk */}
       <Text style={styles.title}>{product.productName}</Text>
+
       <Text style={styles.price}>
         Rp {product.productPrice.toLocaleString("id-ID")}
       </Text>
+
       <Text style={styles.description}>{product.productDescription}</Text>
 
       <View style={styles.footer}>
-        {/* 3. Pengatur Quantity */}
         <View style={styles.qtyContainer}>
           <Text style={styles.qtyLabel}>
             Atur Jumlah (Stok: {product.productStock})
           </Text>
+
           <View style={styles.qtyRow}>
             <TouchableOpacity
               onPress={() => setQty(Math.max(1, qty - 1))}
@@ -60,9 +77,11 @@ export default function ProductDetailScreen() {
             >
               <Text style={styles.qtyBtnText}>-</Text>
             </TouchableOpacity>
+
             <Text style={styles.qtyValue}>{qty}</Text>
+
             <TouchableOpacity
-              onPress={() => setQty(qty + 1)}
+              onPress={() => setQty(Math.min(product.productStock, qty + 1))}
               style={styles.qtyBtn}
             >
               <Text style={styles.qtyBtnText}>+</Text>
@@ -70,7 +89,6 @@ export default function ProductDetailScreen() {
           </View>
         </View>
 
-        {/* 4. Button Add Cart */}
         <TouchableOpacity
           onPress={handleAddToCart}
           style={styles.primaryButton}
@@ -85,8 +103,16 @@ export default function ProductDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#ffffff", padding: 16 },
-  centerContainer: { flex: 1, alignItems: "center", justifyContent: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#ffffff",
+    padding: 16,
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   imageBigPlaceholder: {
     width: "100%",
     height: 240,
@@ -95,8 +121,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 16,
+    overflow: "hidden",
   },
-  imageBigText: { color: "#9ca3af", fontWeight: "bold" },
+  productImageBig: {
+    width: "100%",
+    height: "100%",
+  },
+  imageBigText: {
+    color: "#9ca3af",
+    fontWeight: "bold",
+  },
   title: {
     fontSize: 22,
     fontWeight: "bold",
@@ -109,7 +143,11 @@ const styles = StyleSheet.create({
     color: "#3b82f6",
     marginBottom: 12,
   },
-  description: { fontSize: 14, color: "#4b5563", lineHeight: 20 },
+  description: {
+    fontSize: 14,
+    color: "#4b5563",
+    lineHeight: 20,
+  },
   footer: {
     marginTop: "auto",
     borderTopWidth: 1,
@@ -122,7 +160,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 16,
   },
-  qtyLabel: { color: "#4b5563", fontSize: 13, fontWeight: "500" },
+  qtyLabel: {
+    color: "#4b5563",
+    fontSize: 13,
+    fontWeight: "500",
+  },
   qtyRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -135,13 +177,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     backgroundColor: "#f3f4f6",
   },
-  qtyBtnText: { fontSize: 16, fontWeight: "bold" },
-  qtyValue: { paddingHorizontal: 16, fontWeight: "bold", fontSize: 14 },
+  qtyBtnText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  qtyValue: {
+    paddingHorizontal: 16,
+    fontWeight: "bold",
+    fontSize: 14,
+  },
   primaryButton: {
     backgroundColor: "#3b82f6",
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",
   },
-  primaryButtonText: { color: "#ffffff", fontWeight: "bold", fontSize: 16 },
+  primaryButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
 });

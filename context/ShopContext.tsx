@@ -12,6 +12,7 @@ export interface Product {
   productDescription: string;
   productPrice: number;
   productStock: number;
+  productImage?: string;
 }
 
 export interface CartItem {
