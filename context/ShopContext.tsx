@@ -67,7 +67,11 @@ interface ShopContextType {
   updateCartQty: (cartId: number, qty: number) => Promise<void>;
   removeFromCart: (cartId: number) => Promise<void>;
   checkout: (address: string, paymentMethodId: number) => Promise<boolean>;
-  createPaymentMethod: (name: string, type: "wallet" | "bank", logoUrl: string) => Promise<boolean>;
+  createPaymentMethod: (
+    name: string,
+    type: "wallet" | "bank",
+    logoUrl: string,
+  ) => Promise<boolean>;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -75,7 +79,7 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const BASE_URL = "http://shop.bamaha.my.id";
+  const BASE_URL = "https://shop.tandurkarya.com";
 
   // ⚠️ GANTI NILAI INI SESUAI DENGAN PROJECT ID KELOMPOK ANDA DI POSTMAN
   const PROJECT_ID = 3;
@@ -83,7 +87,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([{ id: 0, categoryName: "Semua" }]);
+  const [categories, setCategories] = useState<Category[]>([
+    { id: 0, categoryName: "Semua" },
+  ]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -95,21 +101,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         setLoading(true);
         const savedToken = await AsyncStorage.getItem("userToken");
-        if (savedToken) {
+        const savedUser = await AsyncStorage.getItem("userData");
+
+        if (savedToken && savedUser) {
           setToken(savedToken);
-          // Ambil detail profil untuk memastikan token masih valid
-          const profileRes = await fetch(`${BASE_URL}/auth/me`, {
-            headers: { Authorization: `Bearer ${savedToken}` },
-          });
-          const profileData = await profileRes.json();
-          if (profileRes.ok && profileData.success) {
-            setUser(profileData.data);
-          } else {
-            // Hapus token jika token kadaluwarsa/tidak valid
-            await AsyncStorage.removeItem("userToken");
-            setToken(null);
-            setUser(null);
-          }
+          setUser(JSON.parse(savedUser));
         }
       } catch (err) {
         console.error("Gagal memuat token dari storage", err);
@@ -160,27 +156,30 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
+
       const res = await fetch(`${BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Login Gagal");
 
-      // Simpan token ke state & AsyncStorage
-      setToken(data.data.token);
-      await AsyncStorage.setItem("userToken", data.data.token);
+      if (!res.ok || !data.success) {
+        return false;
+      }
 
-      // Ambil data profil dari endpoint /auth/me
-      const profileRes = await fetch(`${BASE_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${data.data.token}` },
-      });
-      const profileData = await profileRes.json();
-      setUser(profileData.data);
+      const loginToken = data.data.token;
+      const loginUser = data.data.user;
+
+      setToken(loginToken);
+      setUser(loginUser);
+
+      await AsyncStorage.setItem("userToken", loginToken);
+      await AsyncStorage.setItem("userData", JSON.stringify(loginUser));
+
       return true;
     } catch (err: any) {
-      Alert.alert("Login Error", err.message);
       return false;
     } finally {
       setLoading(false);
@@ -190,6 +189,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   const logout = async () => {
     try {
       await AsyncStorage.removeItem("userToken");
+      await AsyncStorage.removeItem("userData");
     } catch (err) {
       console.error("Gagal menghapus session token", err);
     }
@@ -267,7 +267,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   // 4. FUNGSI MODIFIKASI DATA (MUTATION API)
   // ========================================================
 
-  const addToCart = async (productId: number, quantity: number): Promise<boolean> => {
+  const addToCart = async (
+    productId: number,
+    quantity: number,
+  ): Promise<boolean> => {
     try {
       const res = await fetch(`${BASE_URL}/carts`, {
         method: "POST",
@@ -350,7 +353,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         body: JSON.stringify({ name, type, logoUrl }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Gagal membuat metode pembayaran");
+      if (!res.ok)
+        throw new Error(data.message || "Gagal membuat metode pembayaran");
       await fetchPaymentMethods();
       return true;
     } catch (err: any) {

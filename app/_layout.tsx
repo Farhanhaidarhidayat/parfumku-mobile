@@ -19,17 +19,32 @@ function RootContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = async () => {
+    setErrorMessage("");
+
     if (!email || !password || (!isLoginView && !name)) {
-      alert("Mohon isi semua bidang form!");
+      setErrorMessage("Semua kolom wajib diisi.");
       return;
     }
+
     if (isLoginView) {
-      await login(email, password);
+      const success = await login(email, password);
+
+      if (!success) {
+        setErrorMessage("Email atau password salah.");
+        return;
+      }
     } else {
       const success = await register(name, email, password);
-      if (success) setIsLoginView(true);
+
+      if (success) {
+        setIsLoginView(true);
+        setErrorMessage("");
+      } else {
+        setErrorMessage("Registrasi gagal. Email mungkin sudah digunakan.");
+      }
     }
   };
 
@@ -67,6 +82,9 @@ function RootContent() {
             secureTextEntry
             style={styles.input}
           />
+          {errorMessage ? (
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          ) : null}
 
           {loading ? (
             <ActivityIndicator
@@ -83,7 +101,10 @@ function RootContent() {
           )}
 
           <TouchableOpacity
-            onPress={() => setIsLoginView(!isLoginView)}
+            onPress={() => {
+              setIsLoginView(!isLoginView);
+              setErrorMessage("");
+            }}
             style={styles.switchBtn}
           >
             <Text style={styles.switchText}>
@@ -127,6 +148,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#f3f4f6",
     justifyContent: "center",
     padding: 20,
+  },
+  errorText: {
+    color: "#dc2626",
+    fontSize: 13,
+    fontWeight: "500",
+    marginBottom: 12,
+    textAlign: "center",
   },
   authCard: {
     backgroundColor: "#ffffff",
