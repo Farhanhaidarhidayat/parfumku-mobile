@@ -32,6 +32,7 @@ describe("ProductDetailScreen test", () => {
     (useShop as jest.Mock).mockReturnValue({
       products: mockProducts,
       addToCart: jest.fn(),
+      fetchProducts: jest.fn(),
     });
 
     const { getByText } = render(<ProductDetailScreen />);

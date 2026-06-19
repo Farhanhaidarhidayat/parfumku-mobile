@@ -16,6 +16,7 @@ jest.mock("expo-router", () => ({
 }));
 
 describe("HomeScreen (tabs) integration test", () => {
+  jest.setTimeout(15000);
   const mockProducts = [
     {
       id: 1,

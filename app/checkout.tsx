@@ -12,31 +12,55 @@ import {
 import { useShop } from "../context/ShopContext";
 
 export default function CheckoutScreen() {
-  const { paymentMethods, checkout, fetchPaymentMethods, user, createPaymentMethod } = useShop();
+  const {
+    paymentMethods,
+    cart,
+    checkout,
+    fetchPaymentMethods,
+    user,
+    createPaymentMethod,
+  } = useShop();
   const router = useRouter();
 
   const [address, setAddress] = useState("");
   const [selectedMethod, setSelectedMethod] = useState<number | null>(null);
+  const activePaymentMethodId = selectedMethod ?? paymentMethods[0]?.id ?? null;
 
   // Tarik data metode pembayaran aktif milik Project ID Anda dari API
   useEffect(() => {
     fetchPaymentMethods();
-  }, []);
+  }, [fetchPaymentMethods]);
 
   const handleCreateDefaultPayment = async () => {
-    const success = await createPaymentMethod("GoPay", "wallet", "https://example.com/gopay.png");
+    const success = await createPaymentMethod(
+      "GoPay",
+      "wallet",
+      "https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg",
+    );
     if (success) {
-      Alert.alert("Sukses", "Metode pembayaran GoPay berhasil dibuat untuk Proyek Anda!");
+      Alert.alert(
+        "Sukses",
+        "Metode pembayaran GoPay berhasil dibuat untuk Proyek Anda!",
+      );
     }
   };
 
   const handleProcessCheckout = async () => {
-    if (!address.trim())
-      return Alert.alert("Error", "Alamat pengiriman wajib diisi.");
-    if (!selectedMethod)
-      return Alert.alert("Error", "Pilih salah satu metode pembayaran API.");
+    if (cart.length === 0) {
+      Alert.alert("Error", "Keranjang masih kosong. Tambahkan produk dulu.");
+      router.replace({ pathname: "/(tabs)/cart" });
+      return;
+    }
 
-    const success = await checkout(address, selectedMethod);
+    if (!address.trim()) {
+      return Alert.alert("Error", "Alamat pengiriman wajib diisi.");
+    }
+
+    if (!activePaymentMethodId) {
+      return Alert.alert("Error", "Pilih salah satu metode pembayaran API.");
+    }
+
+    const success = await checkout(address.trim(), activePaymentMethodId);
     if (success) {
       Alert.alert(
         "Sukses",
@@ -94,7 +118,7 @@ export default function CheckoutScreen() {
               onPress={() => setSelectedMethod(method.id)}
               style={[
                 styles.paymentOption,
-                selectedMethod === method.id && styles.paymentOptionActive,
+                activePaymentMethodId === method.id && styles.paymentOptionActive,
               ]}
             >
               <Text style={styles.paymentName}>{method.name}</Text>

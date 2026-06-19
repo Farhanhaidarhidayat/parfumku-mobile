@@ -23,6 +23,20 @@ describe("CheckoutScreen test", () => {
 
     (useShop as jest.Mock).mockReturnValue({
       paymentMethods: mockPaymentMethods,
+      cart: [
+        {
+          id: 1,
+          quantity: 1,
+          product: {
+            id: 10,
+            categoryId: 1,
+            productName: "Parfum Test",
+            productDescription: "Produk test",
+            productPrice: 100000,
+            productStock: 5,
+          },
+        },
+      ],
       checkout: jest.fn(),
       fetchPaymentMethods: jest.fn(),
       user: { name: "Budi", email: "budi@test.com" },

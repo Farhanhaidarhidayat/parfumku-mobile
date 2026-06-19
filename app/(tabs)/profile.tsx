@@ -15,7 +15,7 @@ export default function ProfileScreen() {
   // Ambil manifes riwayat transaksi terbaru langsung dari server API
   useEffect(() => {
     fetchPurchases();
-  }, []);
+  }, [fetchPurchases]);
 
   return (
     <ScrollView style={styles.container}>

@@ -44,7 +44,7 @@ export default function ProductCard({ product, onPress }: ProductCardProps) {
       </Text>
 
       <Text style={styles.productStock}>
-        Stok tersedia: {product.productStock}
+        Stok aktif: {product.productStock}
       </Text>
     </TouchableOpacity>
   );

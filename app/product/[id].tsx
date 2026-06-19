@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
@@ -12,11 +12,17 @@ import { useShop } from "../../context/ShopContext";
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams();
-  const { products, addToCart } = useShop();
+  const { products, addToCart, fetchProducts } = useShop();
   const router = useRouter();
 
   const product = products.find((p) => p.id === Number(id));
   const [qty, setQty] = useState(1);
+
+  useEffect(() => {
+    if (!product) {
+      fetchProducts();
+    }
+  }, [fetchProducts, product]);
 
   if (!product) {
     return (

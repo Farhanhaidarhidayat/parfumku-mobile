@@ -33,7 +33,7 @@ export default function HomeScreen() {
       setLoadingRefresh(false);
     };
     loadData();
-  }, []);
+  }, [fetchCategories, fetchProducts]);
 
   const filteredProducts = products.filter((p) => {
     const matchSearch = p.productName
@@ -58,7 +58,7 @@ export default function HomeScreen() {
 
       {/* 2. Filter Search */}
       <TextInput
-        placeholder="Cari parfum favoritmu..."
+        placeholder="Cari produk di proyek ini..."
         value={search}
         onChangeText={setSearch}
         style={styles.searchBar}

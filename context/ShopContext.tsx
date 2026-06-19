@@ -1,10 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { Alert } from "react-native";
 
-// ========================================================
-// 1. DEFINISI TYPE / INTERFACE (MENYESUAIKAN RESPONSE API)
-// ========================================================
+const BASE_URL = "https://shop.tandurkarya.com";
+const PROJECT_ID = 3;
+
 export interface Product {
   id: number;
   categoryId: number;
@@ -16,9 +23,9 @@ export interface Product {
 }
 
 export interface CartItem {
-  id: number; // ID unik item cart
+  id: number;
   quantity: number;
-  product: Product; // Join data detail produk dari API
+  product: Product;
 }
 
 export interface Category {
@@ -30,6 +37,7 @@ export interface PaymentMethod {
   id: number;
   name: string;
   type: "wallet" | "bank";
+  logoUrl?: string;
 }
 
 export interface Purchase {
@@ -58,7 +66,7 @@ interface ShopContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   fetchProducts: () => Promise<void>;
   fetchCategories: () => Promise<void>;
   fetchCart: () => Promise<void>;
@@ -77,14 +85,24 @@ interface ShopContextType {
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
+const parseJsonResponse = async (res: Response) => {
+  const text = await res.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error("Response server tidak valid.");
+  }
+};
+
+const getErrorMessage = (data: any, fallback: string) => {
+  return data?.message || data?.error || fallback;
+};
+
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const BASE_URL = "https://shop.tandurkarya.com";
-
-  // ⚠️ GANTI NILAI INI SESUAI DENGAN PROJECT ID KELOMPOK ANDA DI POSTMAN
-  const PROJECT_ID = 3;
-
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -96,7 +114,30 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // Auto-load session token dari AsyncStorage saat pertama kali aplikasi dibuka
+  const getHeaders = useCallback(
+    () => ({
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }),
+    [token],
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await AsyncStorage.multiRemove(["userToken", "userData"]);
+    } catch (err) {
+      console.error("Gagal menghapus session token", err);
+    }
+
+    setToken(null);
+    setUser(null);
+    setProducts([]);
+    setCategories([{ id: 0, categoryName: "Semua" }]);
+    setCart([]);
+    setPaymentMethods([]);
+    setPurchases([]);
+  }, []);
+
   useEffect(() => {
     const loadSession = async () => {
       try {
@@ -110,296 +151,391 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       } catch (err) {
         console.error("Gagal memuat token dari storage", err);
+        await logout();
       } finally {
         setLoading(false);
       }
     };
+
     loadSession();
-  }, []);
+  }, [logout]);
 
-  // Helper untuk mempermudah konfigurasi Header HTTP Request
-  const getHeaders = () => ({
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  });
+  const register = useCallback(
+    async (name: string, email: string, password: string): Promise<boolean> => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${BASE_URL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectId: PROJECT_ID, name, email, password }),
+        });
+        const data = await parseJsonResponse(res);
 
-  // ========================================================
-  // 2. FUNGSI AUTENTIKASI (AUTH API)
-  // ========================================================
+        if (!res.ok || data?.success === false) {
+          throw new Error(getErrorMessage(data, "Registrasi gagal."));
+        }
 
-  const register = async (
-    name: string,
-    email: string,
-    password: string,
-  ): Promise<boolean> => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${BASE_URL}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: PROJECT_ID, name, email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Registrasi Gagal");
-      Alert.alert(
-        "Sukses",
-        "Akun berhasil terdaftar di bawah Project ID Anda.",
-      );
-      return true;
-    } catch (err: any) {
-      Alert.alert("Register Error", err.message);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      setLoading(true);
-
-      const res = await fetch(`${BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
+        Alert.alert("Sukses", "Akun berhasil dibuat. Silakan login.");
+        return true;
+      } catch (err: any) {
+        Alert.alert("Register Error", err.message || "Registrasi gagal.");
         return false;
+      } finally {
+        setLoading(false);
       }
+    },
+    [],
+  );
 
-      const loginToken = data.data.token;
-      const loginUser = data.data.user;
+  const login = useCallback(
+    async (email: string, password: string): Promise<boolean> => {
+      try {
+        setLoading(true);
+        const res = await fetch(`${BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await parseJsonResponse(res);
 
-      setToken(loginToken);
-      setUser(loginUser);
+        if (!res.ok || !data?.success || !data?.data?.token) {
+          throw new Error(getErrorMessage(data, "Email atau password salah."));
+        }
 
-      await AsyncStorage.setItem("userToken", loginToken);
-      await AsyncStorage.setItem("userData", JSON.stringify(loginUser));
+        const loginToken = data.data.token;
+        const loginUser = data.data.user;
 
-      return true;
-    } catch (err: any) {
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
+        setToken(loginToken);
+        setUser(loginUser);
+        await AsyncStorage.setItem("userToken", loginToken);
+        await AsyncStorage.setItem("userData", JSON.stringify(loginUser));
 
-  const logout = async () => {
-    try {
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("userData");
-    } catch (err) {
-      console.error("Gagal menghapus session token", err);
-    }
-    setToken(null);
-    setUser(null);
-    setCart([]);
-    setPurchases([]);
-  };
+        return true;
+      } catch {
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
-  // ========================================================
-  // 3. FUNGSI AMBIL DATA (GET DATA API)
-  // ========================================================
+  const fetchCategories = useCallback(async () => {
+    if (!token) return;
 
-  const fetchCategories = async () => {
     try {
       const res = await fetch(`${BASE_URL}/categories`, {
         headers: getHeaders(),
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const data = await parseJsonResponse(res);
+
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
+
+      if (res.ok && data?.success && Array.isArray(data.data)) {
         setCategories([{ id: 0, categoryName: "Semua" }, ...data.data]);
       }
     } catch (err) {
       console.error("Gagal mengambil data kategori", err);
     }
-  };
+  }, [getHeaders, logout, token]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    if (!token) return;
+
     try {
       const res = await fetch(`${BASE_URL}/products`, {
         headers: getHeaders(),
       });
-      const data = await res.json();
-      if (res.ok && data.success) setProducts(data.data);
+      const data = await parseJsonResponse(res);
+
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
+
+      if (res.ok && data?.success && Array.isArray(data.data)) {
+        setProducts(data.data);
+      }
     } catch (err) {
       console.error("Gagal mengambil data produk", err);
     }
-  };
+  }, [getHeaders, logout, token]);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
+    if (!token) return;
+
     try {
       const res = await fetch(`${BASE_URL}/carts`, { headers: getHeaders() });
-      const data = await res.json();
-      if (res.ok && data.success) setCart(data.data);
+      const data = await parseJsonResponse(res);
+
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
+
+      if (res.ok && data?.success && Array.isArray(data.data)) {
+        setCart(data.data);
+      }
     } catch (err) {
       console.error("Gagal mengambil data keranjang", err);
     }
-  };
+  }, [getHeaders, logout, token]);
 
-  const fetchPaymentMethods = async () => {
+  const fetchPaymentMethods = useCallback(async () => {
+    if (!token) return;
+
     try {
       const res = await fetch(`${BASE_URL}/payment-methods`, {
         headers: getHeaders(),
       });
-      const data = await res.json();
-      if (res.ok && data.success) setPaymentMethods(data.data);
+      const data = await parseJsonResponse(res);
+
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
+
+      if (res.ok && data?.success && Array.isArray(data.data)) {
+        setPaymentMethods(data.data);
+      }
     } catch (err) {
       console.error("Gagal mengambil metode pembayaran", err);
     }
-  };
+  }, [getHeaders, logout, token]);
 
-  const fetchPurchases = async () => {
+  const fetchPurchases = useCallback(async () => {
+    if (!token) return;
+
     try {
       const res = await fetch(`${BASE_URL}/purchases`, {
         headers: getHeaders(),
       });
-      const data = await res.json();
-      if (res.ok && data.success) setPurchases(data.data);
+      const data = await parseJsonResponse(res);
+
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
+
+      if (res.ok && data?.success && Array.isArray(data.data)) {
+        setPurchases(data.data);
+      }
     } catch (err) {
       console.error("Gagal mengambil riwayat transaksi", err);
     }
-  };
+  }, [getHeaders, logout, token]);
 
-  // ========================================================
-  // 4. FUNGSI MODIFIKASI DATA (MUTATION API)
-  // ========================================================
+  const addToCart = useCallback(
+    async (productId: number, quantity: number): Promise<boolean> => {
+      if (!token) return false;
 
-  const addToCart = async (
-    productId: number,
-    quantity: number,
-  ): Promise<boolean> => {
-    try {
-      const res = await fetch(`${BASE_URL}/carts`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ productId, quantity }),
-      });
-      if (!res.ok)
-        throw new Error("Gagal menambahkan item ke server keranjang");
-      await fetchCart(); // Sinkronisasi ulang data lokal dengan database server
-      return true;
-    } catch (err: any) {
-      Alert.alert("Cart Error", err.message);
-      return false;
-    }
-  };
+      try {
+        const res = await fetch(`${BASE_URL}/carts`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ productId, quantity }),
+        });
+        const data = await parseJsonResponse(res);
 
-  const updateCartQty = async (cartId: number, qty: number) => {
-    if (qty <= 0) return removeFromCart(cartId);
-    try {
-      const res = await fetch(`${BASE_URL}/carts/${cartId}`, {
-        method: "PUT",
-        headers: getHeaders(),
-        body: JSON.stringify({ quantity: qty }),
-      });
-      if (!res.ok) throw new Error("Gagal memperbarui kuantitas");
-      await fetchCart();
-    } catch (err: any) {
-      Alert.alert("Update Cart Error", err.message);
-    }
-  };
+        if (!res.ok || data?.success === false) {
+          throw new Error(
+            getErrorMessage(data, "Gagal menambahkan item ke keranjang."),
+          );
+        }
 
-  const removeFromCart = async (cartId: number) => {
-    try {
-      const res = await fetch(`${BASE_URL}/carts/${cartId}`, {
-        method: "DELETE",
-        headers: getHeaders(),
-      });
-      if (!res.ok) throw new Error("Gagal menghapus item");
-      await fetchCart();
-    } catch (err: any) {
-      Alert.alert("Delete Error", err.message);
-    }
-  };
-
-  const checkout = async (
-    address: string,
-    paymentMethodId: number,
-  ): Promise<boolean> => {
-    try {
-      const res = await fetch(`${BASE_URL}/purchases`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ address, paymentMethodId }),
-      });
-      const data = await res.json();
-      if (!res.ok)
-        throw new Error(
-          data.message || "Proses checkout gagal divalidasi server",
-        );
-
-      setCart([]); // Kosongkan keranjang lokal karena server otomatis mengosongkannya (ACID)
-      await fetchPurchases(); // Ambil riwayat pembelian terbaru
-      return true;
-    } catch (err: any) {
-      Alert.alert("Checkout Gagal", err.message);
-      return false;
-    }
-  };
-
-  const createPaymentMethod = async (
-    name: string,
-    type: "wallet" | "bank",
-    logoUrl: string,
-  ): Promise<boolean> => {
-    try {
-      setLoading(true);
-      const res = await fetch(`${BASE_URL}/payment-methods`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ name, type, logoUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok)
-        throw new Error(data.message || "Gagal membuat metode pembayaran");
-      await fetchPaymentMethods();
-      return true;
-    } catch (err: any) {
-      Alert.alert("Error", err.message);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <ShopContext.Provider
-      value={{
-        token,
-        user,
-        products,
-        categories,
-        cart,
-        paymentMethods,
-        purchases,
-        loading,
-        login,
-        register,
-        logout,
-        fetchProducts,
-        fetchCategories,
-        fetchCart,
-        fetchPaymentMethods,
-        fetchPurchases,
-        addToCart,
-        updateCartQty,
-        removeFromCart,
-        checkout,
-        createPaymentMethod,
-      }}
-    >
-      {children}
-    </ShopContext.Provider>
+        await fetchCart();
+        return true;
+      } catch (err: any) {
+        Alert.alert("Cart Error", err.message || "Gagal menambahkan item.");
+        return false;
+      }
+    },
+    [fetchCart, getHeaders, token],
   );
+
+  const removeFromCart = useCallback(
+    async (cartId: number) => {
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${BASE_URL}/carts/${cartId}`, {
+          method: "DELETE",
+          headers: getHeaders(),
+        });
+        const data = await parseJsonResponse(res);
+
+        if (!res.ok || data?.success === false) {
+          throw new Error(getErrorMessage(data, "Gagal menghapus item."));
+        }
+
+        await fetchCart();
+      } catch (err: any) {
+        Alert.alert("Delete Error", err.message || "Gagal menghapus item.");
+      }
+    },
+    [fetchCart, getHeaders, token],
+  );
+
+  const updateCartQty = useCallback(
+    async (cartId: number, qty: number) => {
+      if (qty <= 0) {
+        await removeFromCart(cartId);
+        return;
+      }
+
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${BASE_URL}/carts/${cartId}`, {
+          method: "PUT",
+          headers: getHeaders(),
+          body: JSON.stringify({ quantity: qty }),
+        });
+        const data = await parseJsonResponse(res);
+
+        if (!res.ok || data?.success === false) {
+          throw new Error(getErrorMessage(data, "Gagal memperbarui kuantitas."));
+        }
+
+        await fetchCart();
+      } catch (err: any) {
+        Alert.alert(
+          "Update Cart Error",
+          err.message || "Gagal memperbarui kuantitas.",
+        );
+      }
+    },
+    [fetchCart, getHeaders, removeFromCart, token],
+  );
+
+  const checkout = useCallback(
+    async (address: string, paymentMethodId: number): Promise<boolean> => {
+      if (!token) return false;
+
+      if (cart.length === 0) {
+        Alert.alert("Checkout Gagal", "Keranjang masih kosong.");
+        return false;
+      }
+
+      try {
+        const res = await fetch(`${BASE_URL}/purchases`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ address: address.trim(), paymentMethodId }),
+        });
+        const data = await parseJsonResponse(res);
+
+        if (!res.ok || data?.success === false) {
+          throw new Error(
+            getErrorMessage(data, "Proses checkout gagal divalidasi server."),
+          );
+        }
+
+        setCart([]);
+        await fetchPurchases();
+        return true;
+      } catch (err: any) {
+        Alert.alert("Checkout Gagal", err.message || "Checkout gagal.");
+        return false;
+      }
+    },
+    [cart.length, fetchPurchases, getHeaders, token],
+  );
+
+  const createPaymentMethod = useCallback(
+    async (
+      name: string,
+      type: "wallet" | "bank",
+      logoUrl: string,
+    ): Promise<boolean> => {
+      if (!token) return false;
+
+      try {
+        setLoading(true);
+        const res = await fetch(`${BASE_URL}/payment-methods`, {
+          method: "POST",
+          headers: getHeaders(),
+          body: JSON.stringify({ name, type, logoUrl }),
+        });
+        const data = await parseJsonResponse(res);
+
+        if (!res.ok || data?.success === false) {
+          throw new Error(
+            getErrorMessage(data, "Gagal membuat metode pembayaran."),
+          );
+        }
+
+        await fetchPaymentMethods();
+        return true;
+      } catch (err: any) {
+        Alert.alert("Payment Error", err.message || "Gagal membuat metode pembayaran.");
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchPaymentMethods, getHeaders, token],
+  );
+
+  const value = useMemo(
+    () => ({
+      token,
+      user,
+      products,
+      categories,
+      cart,
+      paymentMethods,
+      purchases,
+      loading,
+      login,
+      register,
+      logout,
+      fetchProducts,
+      fetchCategories,
+      fetchCart,
+      fetchPaymentMethods,
+      fetchPurchases,
+      addToCart,
+      updateCartQty,
+      removeFromCart,
+      checkout,
+      createPaymentMethod,
+    }),
+    [
+      addToCart,
+      cart,
+      categories,
+      checkout,
+      createPaymentMethod,
+      fetchCart,
+      fetchCategories,
+      fetchPaymentMethods,
+      fetchProducts,
+      fetchPurchases,
+      loading,
+      login,
+      logout,
+      paymentMethods,
+      products,
+      purchases,
+      register,
+      removeFromCart,
+      token,
+      updateCartQty,
+      user,
+    ],
+  );
+
+  return <ShopContext.Provider value={value}>{children}</ShopContext.Provider>;
 };
 
 export const useShop = () => {
   const context = useContext(ShopContext);
-  if (!context)
+  if (!context) {
     throw new Error("useShop harus dibungkus di dalam ShopProvider");
+  }
   return context;
 };

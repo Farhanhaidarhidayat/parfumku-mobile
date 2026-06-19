@@ -9,7 +9,7 @@
 * Kelas: I243C
 * Project ID: 3
 * Framework: React Native + Expo
-* API: http://shop.bamaha.my.id
+* API: https://shop.tandurkarya.com
 
 ## Anggota Kelompok
 
