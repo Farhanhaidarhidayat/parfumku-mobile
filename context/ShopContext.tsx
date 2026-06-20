@@ -347,13 +347,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         await fetchCart();
+        await fetchProducts();
         return true;
       } catch (err: any) {
         Alert.alert("Cart Error", err.message || "Gagal menambahkan item.");
         return false;
       }
     },
-    [fetchCart, getHeaders, token],
+    [fetchCart, fetchProducts, getHeaders, token],
   );
 
   const removeFromCart = useCallback(
@@ -372,11 +373,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         await fetchCart();
+        await fetchProducts();
       } catch (err: any) {
         Alert.alert("Delete Error", err.message || "Gagal menghapus item.");
       }
     },
-    [fetchCart, getHeaders, token],
+    [fetchCart, fetchProducts, getHeaders, token],
   );
 
   const updateCartQty = useCallback(
@@ -388,19 +390,48 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
 
       if (!token) return;
 
-      try {
-        const res = await fetch(`${BASE_URL}/carts/${cartId}`, {
-          method: "PUT",
-          headers: getHeaders(),
-          body: JSON.stringify({ quantity: qty }),
-        });
-        const data = await parseJsonResponse(res);
+      const currentItem = cart.find((item) => item.id === cartId);
+      if (!currentItem) return;
 
-        if (!res.ok || data?.success === false) {
-          throw new Error(getErrorMessage(data, "Gagal memperbarui kuantitas."));
+      try {
+        if (qty > currentItem.quantity) {
+          const addedQty = qty - currentItem.quantity;
+
+          if (addedQty > (currentItem.product?.productStock ?? 0)) {
+            Alert.alert("Stok Tidak Cukup", "Jumlah pembelian melebihi stok tersedia.");
+            return;
+          }
+
+          const res = await fetch(`${BASE_URL}/carts`, {
+            method: "POST",
+            headers: getHeaders(),
+            body: JSON.stringify({
+              productId: currentItem.product.id,
+              quantity: addedQty,
+            }),
+          });
+          const data = await parseJsonResponse(res);
+
+          if (!res.ok || data?.success === false) {
+            throw new Error(getErrorMessage(data, "Gagal menambahkan kuantitas."));
+          }
+        } else if (qty < currentItem.quantity) {
+          const res = await fetch(`${BASE_URL}/carts/${cartId}`, {
+            method: "PUT",
+            headers: getHeaders(),
+            body: JSON.stringify({ quantity: qty }),
+          });
+          const data = await parseJsonResponse(res);
+
+          if (!res.ok || data?.success === false) {
+            throw new Error(getErrorMessage(data, "Gagal memperbarui kuantitas."));
+          }
+        } else {
+          return;
         }
 
         await fetchCart();
+        await fetchProducts();
       } catch (err: any) {
         Alert.alert(
           "Update Cart Error",
@@ -408,7 +439,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       }
     },
-    [fetchCart, getHeaders, removeFromCart, token],
+    [cart, fetchCart, fetchProducts, getHeaders, removeFromCart, token],
   );
 
   const checkout = useCallback(
@@ -436,13 +467,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
 
         setCart([]);
         await fetchPurchases();
+        await fetchProducts();
         return true;
       } catch (err: any) {
         Alert.alert("Checkout Gagal", err.message || "Checkout gagal.");
         return false;
       }
     },
-    [cart.length, fetchPurchases, getHeaders, token],
+    [cart.length, fetchProducts, fetchPurchases, getHeaders, token],
   );
 
   const createPaymentMethod = useCallback(

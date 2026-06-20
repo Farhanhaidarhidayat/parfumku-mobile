@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   Alert,
   Image,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,6 +18,7 @@ export default function ProductDetailScreen() {
 
   const product = products.find((p) => p.id === Number(id));
   const [qty, setQty] = useState(1);
+  const [showCartConfirmation, setShowCartConfirmation] = useState(false);
 
   useEffect(() => {
     if (!product) {
@@ -41,10 +43,7 @@ export default function ProductDetailScreen() {
     const success = await addToCart(product.id, qty);
 
     if (success) {
-      Alert.alert("Sukses", "Item berhasil masuk ke keranjang belanja.", [
-        { text: "Tetap Disini" },
-        { text: "Lihat Cart", onPress: () => router.push("/(tabs)/cart") },
-      ]);
+      setShowCartConfirmation(true);
     }
   };
 
@@ -104,6 +103,39 @@ export default function ProductDetailScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={showCartConfirmation}
+        onRequestClose={() => setShowCartConfirmation(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Berhasil Masuk Keranjang</Text>
+            <Text style={styles.modalMessage}>
+              {qty} item {product.productName} berhasil ditambahkan ke keranjang belanja.
+            </Text>
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalSecondaryButton]}
+                onPress={() => setShowCartConfirmation(false)}
+              >
+                <Text style={styles.modalSecondaryText}>Tetap Disini</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalPrimaryButton]}
+                onPress={() => {
+                  setShowCartConfirmation(false);
+                  router.push("/(tabs)/cart");
+                }}
+              >
+                <Text style={styles.modalPrimaryText}>Lihat Keranjang</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -202,5 +234,54 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalCard: {
+    width: "100%",
+    backgroundColor: "#ffffff",
+    borderRadius: 18,
+    padding: 20,
+  },
+  modalTitle: {
+    color: "#1f2937",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  modalMessage: {
+    color: "#4b5563",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 18,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalSecondaryButton: {
+    backgroundColor: "#f3f4f6",
+  },
+  modalPrimaryButton: {
+    backgroundColor: "#3b82f6",
+  },
+  modalSecondaryText: {
+    color: "#374151",
+    fontWeight: "bold",
+  },
+  modalPrimaryText: {
+    color: "#ffffff",
+    fontWeight: "bold",
   },
 });
