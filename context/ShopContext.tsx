@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { Alert } from "react-native";
+import { getCartQuantityForProduct } from "../utils/shopLogic";
 
 const BASE_URL = "https://shop.tandurkarya.com";
 const PROJECT_ID = 3;
@@ -20,6 +21,8 @@ export interface Product {
   productPrice: number;
   productStock: number;
   productImage?: string;
+  productImages?: string[];
+  images?: string[];
 }
 
 export interface CartItem {
@@ -52,7 +55,14 @@ export interface Purchase {
     quantity: number;
     productName: string;
     productPrice: number;
+    productImage?: string;
   }[];
+}
+
+export interface SavedAddress {
+  id: number;
+  label: string;
+  address: string;
 }
 
 interface ShopContextType {
@@ -63,6 +73,10 @@ interface ShopContextType {
   cart: CartItem[];
   paymentMethods: PaymentMethod[];
   purchases: Purchase[];
+  favorites: number[];
+  ratings: Record<number, number>;
+  savedAddresses: SavedAddress[];
+  profileImage: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
@@ -76,6 +90,10 @@ interface ShopContextType {
   updateCartQty: (cartId: number, qty: number) => Promise<void>;
   removeFromCart: (cartId: number) => Promise<void>;
   checkout: (address: string, paymentMethodId: number) => Promise<boolean>;
+  toggleFavorite: (productId: number) => Promise<void>;
+  setProductRating: (productId: number, rating: number) => Promise<void>;
+  saveAddress: (address: string, label?: string) => Promise<void>;
+  setProfileImage: (uri: string | null) => Promise<void>;
   createPaymentMethod: (
     name: string,
     type: "wallet" | "bank",
@@ -112,6 +130,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [favorites, setFavorites] = useState<number[]>([]);
+  const [ratings, setRatings] = useState<Record<number, number>>({});
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [profileImage, setProfileImageState] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
   const getHeaders = useCallback(
@@ -144,6 +166,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         setLoading(true);
         const savedToken = await AsyncStorage.getItem("userToken");
         const savedUser = await AsyncStorage.getItem("userData");
+        const savedFavorites = await AsyncStorage.getItem("favoriteProducts");
+        const savedRatings = await AsyncStorage.getItem("productRatings");
+        const savedAddressesData = await AsyncStorage.getItem("savedAddresses");
+        const savedProfileImage = await AsyncStorage.getItem("profileImage");
+
+        if (savedFavorites) setFavorites(JSON.parse(savedFavorites));
+        if (savedRatings) setRatings(JSON.parse(savedRatings));
+        if (savedAddressesData) setSavedAddresses(JSON.parse(savedAddressesData));
+        if (savedProfileImage) setProfileImageState(savedProfileImage);
 
         if (savedToken && savedUser) {
           setToken(savedToken);
@@ -332,6 +363,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
     async (productId: number, quantity: number): Promise<boolean> => {
       if (!token) return false;
 
+      const product = products.find((item) => item.id === productId);
+      if (product) {
+        const inCartQty = getCartQuantityForProduct(cart, productId);
+        const availableQty = Math.max(0, product.productStock - inCartQty);
+
+        if (availableQty <= 0) {
+          Alert.alert("Stok Habis", "Semua stok produk ini sudah ada di keranjang.");
+          return false;
+        }
+
+        if (quantity > availableQty) {
+          Alert.alert(
+            "Stok Tidak Cukup",
+            `Stok tersedia tinggal ${availableQty}. Jumlah disesuaikan dengan stok.`,
+          );
+          quantity = availableQty;
+        }
+      }
+
       try {
         const res = await fetch(`${BASE_URL}/carts`, {
           method: "POST",
@@ -354,7 +404,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         return false;
       }
     },
-    [fetchCart, fetchProducts, getHeaders, token],
+    [cart, fetchCart, fetchProducts, getHeaders, products, token],
   );
 
   const removeFromCart = useCallback(
@@ -392,6 +442,12 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const currentItem = cart.find((item) => item.id === cartId);
       if (!currentItem) return;
+
+      const maxAllowedQty = Math.max(0, currentItem.product?.productStock ?? 0);
+      if (qty > maxAllowedQty) {
+        Alert.alert("Stok Tidak Cukup", `Maksimal pembelian produk ini ${maxAllowedQty} item.`);
+        return;
+      }
 
       try {
         if (qty > currentItem.quantity) {
@@ -442,6 +498,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
     [cart, fetchCart, fetchProducts, getHeaders, removeFromCart, token],
   );
 
+  const saveAddress = useCallback(
+    async (address: string, label = "Alamat Utama") => {
+      const cleanAddress = address.trim();
+      if (!cleanAddress) return;
+
+      const nextAddresses = [
+        { id: Date.now(), label, address: cleanAddress },
+        ...savedAddresses.filter((item) => item.address !== cleanAddress),
+      ].slice(0, 5);
+
+      setSavedAddresses(nextAddresses);
+      await AsyncStorage.setItem("savedAddresses", JSON.stringify(nextAddresses));
+    },
+    [savedAddresses],
+  );
+
   const checkout = useCallback(
     async (address: string, paymentMethodId: number): Promise<boolean> => {
       if (!token) return false;
@@ -466,6 +538,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         }
 
         setCart([]);
+        await saveAddress(address.trim());
         await fetchPurchases();
         await fetchProducts();
         return true;
@@ -474,8 +547,37 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
         return false;
       }
     },
-    [cart.length, fetchProducts, fetchPurchases, getHeaders, token],
+    [cart.length, fetchProducts, fetchPurchases, getHeaders, saveAddress, token],
   );
+
+  const toggleFavorite = useCallback(async (productId: number) => {
+    const nextFavorites = favorites.includes(productId)
+      ? favorites.filter((id) => id !== productId)
+      : [...favorites, productId];
+
+    setFavorites(nextFavorites);
+    await AsyncStorage.setItem("favoriteProducts", JSON.stringify(nextFavorites));
+  }, [favorites]);
+
+  const setProductRating = useCallback(
+    async (productId: number, rating: number) => {
+      const safeRating = Math.max(1, Math.min(5, Math.round(rating)));
+      const nextRatings = { ...ratings, [productId]: safeRating };
+
+      setRatings(nextRatings);
+      await AsyncStorage.setItem("productRatings", JSON.stringify(nextRatings));
+    },
+    [ratings],
+  );
+
+  const setProfileImage = useCallback(async (uri: string | null) => {
+    setProfileImageState(uri);
+    if (uri) {
+      await AsyncStorage.setItem("profileImage", uri);
+    } else {
+      await AsyncStorage.removeItem("profileImage");
+    }
+  }, []);
 
   const createPaymentMethod = useCallback(
     async (
@@ -521,6 +623,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
       cart,
       paymentMethods,
       purchases,
+      favorites,
+      ratings,
+      savedAddresses,
+      profileImage,
       loading,
       login,
       register,
@@ -534,6 +640,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
       updateCartQty,
       removeFromCart,
       checkout,
+      toggleFavorite,
+      setProductRating,
+      saveAddress,
+      setProfileImage,
       createPaymentMethod,
     }),
     [
@@ -547,15 +657,23 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({
       fetchPaymentMethods,
       fetchProducts,
       fetchPurchases,
+      favorites,
       loading,
       login,
       logout,
       paymentMethods,
       products,
+      profileImage,
       purchases,
+      ratings,
       register,
       removeFromCart,
+      savedAddresses,
+      saveAddress,
+      setProductRating,
+      setProfileImage,
       token,
+      toggleFavorite,
       updateCartQty,
       user,
     ],

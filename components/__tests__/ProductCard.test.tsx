@@ -21,7 +21,7 @@ describe("ProductCard Component Test", () => {
 
     expect(getByText("Laptop ASUS")).toBeTruthy();
     expect(getByText("Rp 15.000.000")).toBeTruthy();
-    expect(getByText("Stok aktif: 10")).toBeTruthy();
+    expect(getByText("Stok tersedia: 10")).toBeTruthy();
   });
 
   it("harus memicu onPress ketika kartu produk ditekan", () => {

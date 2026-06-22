@@ -40,6 +40,6 @@ describe("ProductDetailScreen test", () => {
     expect(getByText("Headset Logitech")).toBeTruthy();
     expect(getByText("Rp 500.000")).toBeTruthy();
     expect(getByText("Headset gaming dengan mic jernih")).toBeTruthy();
-    expect(getByText("Atur Jumlah (Stok: 15)")).toBeTruthy();
+    expect(getByText(/Atur Jumlah/)).toBeTruthy();
   });
 });

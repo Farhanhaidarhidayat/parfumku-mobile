@@ -1,8 +1,12 @@
-import { useEffect } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
 import {
+  Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -10,144 +14,161 @@ import OrderCard from "../../components/OrderCard";
 import { useShop } from "../../context/ShopContext";
 
 export default function ProfileScreen() {
-  const { purchases, fetchPurchases, user, logout } = useShop();
+  const {
+    purchases,
+    fetchPurchases,
+    user,
+    logout,
+    savedAddresses = [],
+    saveAddress = async () => {},
+    profileImage,
+    setProfileImage = async () => {},
+    favorites = [],
+    products = [],
+  } = useShop();
+  const [addressInput, setAddressInput] = useState("");
 
-  // Ambil manifes riwayat transaksi terbaru langsung dari server API
   useEffect(() => {
     fetchPurchases();
   }, [fetchPurchases]);
 
+  const handlePickProfileImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Izin diperlukan", "Berikan izin galeri untuk memilih foto profil.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.82,
+    });
+
+    if (!result.canceled && result.assets[0]?.uri) {
+      await setProfileImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    if (!addressInput.trim()) {
+      Alert.alert("Alamat kosong", "Masukkan alamat terlebih dahulu.");
+      return;
+    }
+    await saveAddress(addressInput, "Alamat Tersimpan");
+    setAddressInput("");
+  };
+
+  const favoriteProducts = products.filter((product) => favorites.includes(product.id));
+
   return (
-    <ScrollView style={styles.container}>
-      {/* Informasi Profil Pengguna */}
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user?.name?.substring(0, 2).toUpperCase() || "U"}
-          </Text>
-        </View>
+        <TouchableOpacity onPress={handlePickProfileImage} style={styles.avatarWrapper} activeOpacity={0.85}>
+          {profileImage ? (
+            <Image source={{ uri: profileImage }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {user?.name?.substring(0, 2).toUpperCase() || "U"}
+              </Text>
+            </View>
+          )}
+          <View style={styles.cameraBadge}><Text style={styles.cameraText}>Ubah Foto</Text></View>
+        </TouchableOpacity>
         <Text style={styles.profileName}>{user?.name || "Loading..."}</Text>
-        <Text style={styles.profileNim}>
-          Pembeli ParfumKu
-        </Text>
+        <Text style={styles.profileNim}>Pembeli ParfumKu</Text>
 
         <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
           <Text style={styles.logoutText}>Keluar / Sign Out</Text>
         </TouchableOpacity>
       </View>
 
-      {/* List Riwayat Checkout Real API */}
-      <Text style={styles.sectionTitle}>
-        Riwayat Pembelian Riil (Database API)
-      </Text>
+      <Text style={styles.sectionTitle}>Alamat Tersimpan</Text>
+      <View style={styles.card}>
+        <TextInput
+          placeholder="Tambah alamat rumah/kantor..."
+          placeholderTextColor="#9B8B81"
+          value={addressInput}
+          onChangeText={setAddressInput}
+          multiline
+          style={styles.addressInput}
+        />
+        <TouchableOpacity style={styles.saveAddressBtn} onPress={handleSaveAddress}>
+          <Text style={styles.saveAddressText}>Simpan Alamat</Text>
+        </TouchableOpacity>
+        {savedAddresses.length === 0 ? (
+          <Text style={styles.emptyText}>Belum ada alamat tersimpan.</Text>
+        ) : (
+          savedAddresses.map((item) => (
+            <View key={item.id} style={styles.addressItem}>
+              <Text style={styles.addressLabel}>{item.label}</Text>
+              <Text style={styles.addressText}>{item.address}</Text>
+            </View>
+          ))
+        )}
+      </View>
 
+      <Text style={styles.sectionTitle}>Barang Disukai</Text>
+      <View style={styles.card}>
+        {favoriteProducts.length === 0 ? (
+          <Text style={styles.emptyText}>Belum ada produk yang disukai.</Text>
+        ) : (
+          favoriteProducts.map((product) => (
+            <View key={product.id} style={styles.favoriteRow}>
+              <View style={styles.favoriteImageBox}>
+                {product.productImage ? <Image source={{ uri: product.productImage }} style={styles.favoriteImage} /> : <Text style={styles.favoriteImageText}>Foto</Text>}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.favoriteName} numberOfLines={1}>{product.productName}</Text>
+                <Text style={styles.favoritePrice}>Rp {product.productPrice.toLocaleString("id-ID")}</Text>
+              </View>
+            </View>
+          ))
+        )}
+      </View>
+
+      <Text style={styles.sectionTitle}>Histori Pembelian</Text>
       {purchases.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>
-            Belum ada riwayat transaksi terdaftar di server.
-          </Text>
+          <Text style={styles.emptyText}>Belum ada riwayat pembelian.</Text>
         </View>
       ) : (
-        purchases.map((order) => (
-          <OrderCard key={order.id} order={order} />
-        ))
+        purchases.map((order) => <OrderCard key={order.id} order={order} />)
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
-  profileCard: {
-    backgroundColor: "#ffffff",
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#f3f4f6",
-    marginBottom: 20,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    backgroundColor: "#3b82f6",
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  avatarText: { color: "#ffffff", fontWeight: "bold", fontSize: 20 },
-  profileName: { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
-  profileNim: {
-    color: "#9ca3af",
-    fontSize: 12,
-    marginTop: 2,
-    marginBottom: 12,
-  },
-  logoutBtn: {
-    backgroundColor: "#fef2f2",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  logoutText: { color: "#ef4444", fontSize: 12, fontWeight: "600" },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#6b7280",
-    textTransform: "uppercase",
-    marginBottom: 10,
-    paddingHorizontal: 4,
-  },
-  emptyCard: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  emptyText: { color: "#9ca3af", fontSize: 13 },
-  orderCard: {
-    backgroundColor: "#ffffff",
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-  },
-  orderHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f3f4f6",
-    paddingBottom: 8,
-    marginBottom: 8,
-  },
-  invoiceNo: { fontWeight: "bold", fontSize: 12, color: "#374151" },
-  orderDate: { fontSize: 10, color: "#9ca3af", marginTop: 1 },
-  statusBadge: {
-    backgroundColor: "#d1fae5",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-    justifyContent: "center",
-  },
-  statusText: {
-    fontSize: 9,
-    color: "#065f46",
-    fontWeight: "bold",
-    textTransform: "uppercase",
-  },
-  addressText: { fontSize: 12, color: "#6b7280", marginBottom: 6 },
-  orderFooter: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    borderTopWidth: 1,
-    borderTopColor: "#f3f4f6",
-    paddingTop: 8,
-    marginTop: 4,
-  },
-  orderMethod: { fontSize: 11, color: "#9ca3af" },
-  orderTotal: { fontSize: 13, fontWeight: "bold", color: "#3b82f6" },
+  container: { flex: 1, backgroundColor: "#F8F3ED" },
+  content: { padding: 16, paddingBottom: 34, maxWidth: 820, width: "100%", alignSelf: "center" },
+  profileCard: { backgroundColor: "#FFFDF9", padding: 18, borderRadius: 20, alignItems: "center", borderWidth: 1, borderColor: "#E8DDD2", marginBottom: 20 },
+  avatarWrapper: { alignItems: "center", marginBottom: 10 },
+  avatar: { width: 78, height: 78, backgroundColor: "#8A4E2A", borderRadius: 39, alignItems: "center", justifyContent: "center" },
+  avatarImage: { width: 78, height: 78, borderRadius: 39 },
+  avatarText: { color: "#ffffff", fontWeight: "bold", fontSize: 22 },
+  cameraBadge: { backgroundColor: "#EFE3D6", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginTop: -8, borderWidth: 1, borderColor: "#FFFDF9" },
+  cameraText: { color: "#6B5D55", fontSize: 10, fontWeight: "800" },
+  profileName: { fontSize: 18, fontWeight: "900", color: "#2F2722" },
+  profileNim: { color: "#8E7E76", fontSize: 12, marginTop: 2, marginBottom: 12 },
+  logoutBtn: { backgroundColor: "#FBEDEA", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  logoutText: { color: "#B24B3E", fontSize: 12, fontWeight: "800" },
+  sectionTitle: { fontSize: 12, fontWeight: "900", color: "#6B5D55", textTransform: "uppercase", marginBottom: 10, paddingHorizontal: 4 },
+  card: { backgroundColor: "#FFFDF9", padding: 14, borderRadius: 16, borderWidth: 1, borderColor: "#E8DDD2", marginBottom: 20 },
+  addressInput: { minHeight: 74, backgroundColor: "#F8F3ED", borderRadius: 12, borderWidth: 1, borderColor: "#E8DDD2", padding: 11, color: "#2F2722", textAlignVertical: "top", marginBottom: 10 },
+  saveAddressBtn: { backgroundColor: "#8A4E2A", paddingVertical: 11, borderRadius: 12, alignItems: "center", marginBottom: 12 },
+  saveAddressText: { color: "#FFFFFF", fontWeight: "900" },
+  addressItem: { backgroundColor: "#F8F3ED", borderRadius: 12, padding: 11, marginTop: 8 },
+  addressLabel: { color: "#2F2722", fontWeight: "900", fontSize: 12, marginBottom: 3 },
+  addressText: { color: "#6B5D55", fontSize: 12, lineHeight: 18 },
+  favoriteRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  favoriteImageBox: { width: 52, height: 52, borderRadius: 12, backgroundColor: "#EFE7DE", alignItems: "center", justifyContent: "center", overflow: "hidden", marginRight: 10 },
+  favoriteImage: { width: "100%", height: "100%" },
+  favoriteImageText: { color: "#8E7E76", fontSize: 10 },
+  favoriteName: { color: "#2F2722", fontWeight: "900", fontSize: 13 },
+  favoritePrice: { color: "#8A4E2A", fontWeight: "800", fontSize: 12, marginTop: 2 },
+  emptyCard: { backgroundColor: "#FFFDF9", padding: 24, borderRadius: 16, alignItems: "center", borderWidth: 1, borderColor: "#E8DDD2" },
+  emptyText: { color: "#8E7E76", fontSize: 13, lineHeight: 19 },
 });

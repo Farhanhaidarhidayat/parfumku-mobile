@@ -31,9 +31,9 @@ describe("ProfileScreen (tabs) test", () => {
     const { getByText } = render(<ProfileScreen />);
 
     expect(getByText("Ahmad")).toBeTruthy();
-    expect(getByText("Invoice ID: #99")).toBeTruthy();
-    expect(getByText("📍 Alamat: Depok, Jawa Barat")).toBeTruthy();
+    expect(getByText("Invoice #99")).toBeTruthy();
+    expect(getByText("📍 Depok, Jawa Barat")).toBeTruthy();
     expect(getByText("Total: Rp 150.000")).toBeTruthy();
-    expect(getByText("Metode ID: GoPay")).toBeTruthy();
+    expect(getByText("GoPay")).toBeTruthy();
   });
 });

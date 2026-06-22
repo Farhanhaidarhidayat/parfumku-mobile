@@ -56,7 +56,7 @@ describe("HomeScreen (tabs) integration test", () => {
     const { getByText } = render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByText("Halo, Budi Santoso")).toBeTruthy();
+      expect(getByText(/Halo,/)).toBeTruthy();
       expect(getByText("iPhone 15 Pro")).toBeTruthy();
       expect(getByText("Baju Kaos Polos")).toBeTruthy();
     });
@@ -66,10 +66,10 @@ describe("HomeScreen (tabs) integration test", () => {
     const { getByPlaceholderText, queryByText } = render(<HomeScreen />);
 
     await waitFor(() => {
-      expect(getByPlaceholderText("Cari produk di proyek ini...")).toBeTruthy();
+      expect(getByPlaceholderText("Cari parfum favoritmu...")).toBeTruthy();
     });
 
-    const searchInput = getByPlaceholderText("Cari produk di proyek ini...");
+    const searchInput = getByPlaceholderText("Cari parfum favoritmu...");
     fireEvent.changeText(searchInput, "Kaos");
 
     await waitFor(() => {

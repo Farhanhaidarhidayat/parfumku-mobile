@@ -20,10 +20,10 @@ describe("OrderCard Component Test", () => {
   it("harus merender informasi pesanan dengan benar", () => {
     const { getByText } = render(<OrderCard order={mockOrder} />);
 
-    expect(getByText("Invoice ID: #5")).toBeTruthy();
-    expect(getByText("📍 Alamat: Jl. Diponegoro No. 10")).toBeTruthy();
+    expect(getByText("Invoice #5")).toBeTruthy();
+    expect(getByText("📍 Jl. Diponegoro No. 10")).toBeTruthy();
     expect(getByText("Total: Rp 250.000")).toBeTruthy();
-    expect(getByText("Metode ID: OVO")).toBeTruthy();
+    expect(getByText("OVO")).toBeTruthy();
     expect(getByText("pending")).toBeTruthy();
   });
 });

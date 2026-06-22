@@ -27,7 +27,7 @@ export default function CartScreen() {
   if (cart.length === 0) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.emptyText}>Keranjang belanja API Anda kosong</Text>
+        <Text style={styles.emptyText}>Keranjang belanja kamu masih kosong</Text>
         <TouchableOpacity
           onPress={() => router.push({ pathname: "/" })}
           style={styles.shopBtn}

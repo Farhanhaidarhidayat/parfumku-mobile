@@ -25,7 +25,7 @@ describe("CartScreen (tabs) test", () => {
     });
 
     const { getByText } = render(<CartScreen />);
-    expect(getByText("Keranjang belanja API Anda kosong")).toBeTruthy();
+    expect(getByText("Keranjang belanja kamu masih kosong")).toBeTruthy();
   });
 
   it("harus merender item keranjang dan subtotal pembayaran", () => {

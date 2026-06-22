@@ -18,27 +18,17 @@ import {
   View,
 } from "react-native";
 
-import {
-  ShopProvider,
-  useShop,
-} from "../context/ShopContext";
+import { ShopProvider, useShop } from "../context/ShopContext";
 
 function RootContent() {
   const { width } = useWindowDimensions();
 
-  const isDesktop =
-    Platform.OS === "web" && width >= 900;
+  const isDesktop = Platform.OS === "web" && width >= 900;
 
-  const {
-    token,
-    login,
-    register,
-    loading,
-  } = useShop();
+  const { token, login, register, loading } = useShop();
 
   const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] =
-    useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -61,42 +51,30 @@ function RootContent() {
     const cleanEmail = email.trim().toLowerCase();
 
     if (!isLogin && !cleanName) {
-      Alert.alert(
-        "Nama belum diisi",
-        "Masukkan nama lengkap terlebih dahulu."
-      );
+      Alert.alert("Nama belum diisi", "Masukkan nama lengkap terlebih dahulu.");
       return;
     }
 
     if (!cleanEmail) {
       Alert.alert(
         "Email belum diisi",
-        "Masukkan alamat email terlebih dahulu."
+        "Masukkan alamat email terlebih dahulu.",
       );
       return;
     }
 
     if (!cleanEmail.includes("@")) {
-      Alert.alert(
-        "Email tidak valid",
-        "Gunakan format email yang benar."
-      );
+      Alert.alert("Email tidak valid", "Gunakan format email yang benar.");
       return;
     }
 
     if (!password) {
-      Alert.alert(
-        "Password belum diisi",
-        "Masukkan password terlebih dahulu."
-      );
+      Alert.alert("Password belum diisi", "Masukkan password terlebih dahulu.");
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert(
-        "Password terlalu pendek",
-        "Password minimal 6 karakter."
-      );
+      Alert.alert("Password terlalu pendek", "Password minimal 6 karakter.");
       return;
     }
 
@@ -105,11 +83,7 @@ function RootContent() {
       return;
     }
 
-    const success = await register(
-      cleanName,
-      cleanEmail,
-      password
-    );
+    const success = await register(cleanName, cleanEmail, password);
 
     if (success) {
       resetForm();
@@ -124,17 +98,12 @@ function RootContent() {
 
         <KeyboardAvoidingView
           style={styles.keyboardContainer}
-          behavior={
-            Platform.OS === "ios"
-              ? "padding"
-              : undefined
-          }
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
           <ScrollView
             contentContainerStyle={[
               styles.scrollContent,
-              isDesktop &&
-                styles.scrollContentDesktop,
+              isDesktop && styles.scrollContentDesktop,
             ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -146,10 +115,7 @@ function RootContent() {
                   ? [
                       styles.authContainerDesktop,
                       {
-                        width: Math.min(
-                          width - 48,
-                          1100
-                        ),
+                        width: Math.min(width - 48, 1100),
                       },
                     ]
                   : styles.authContainerMobile,
@@ -157,44 +123,25 @@ function RootContent() {
             >
               {/* HERO PARFUMKU */}
               <LinearGradient
-                colors={[
-                  "#E36B16",
-                  "#B94108",
-                  "#631D05",
-                ]}
+                colors={["#E36B16", "#B94108", "#631D05"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={[
-                  styles.hero,
-                  isDesktop && styles.heroDesktop,
-                ]}
+                style={[styles.hero, isDesktop && styles.heroDesktop]}
               >
                 <View style={styles.circleDecoration} />
-
-            <View style={styles.brand}>
-            <Image
-              source={require("../assets/images/parfumku-logo-icon.png")}
-              style={styles.brandLogoImage}
-              resizeMode="contain"
-                />
-              </View>
 
                 <View
                   style={[
                     styles.heroContent,
-                    isDesktop &&
-                      styles.heroContentDesktop,
+                    isDesktop && styles.heroContentDesktop,
                   ]}
                 >
-                  <Text style={styles.heroLabel}>
-                    Temukan aroma terbaikmu
-                  </Text>
+                  <Text style={styles.heroLabel}>Temukan aroma terbaikmu</Text>
 
                   <Text
                     style={[
                       styles.heroTitle,
-                      isDesktop &&
-                        styles.heroTitleDesktop,
+                      isDesktop && styles.heroTitleDesktop,
                     ]}
                   >
                     Aroma yang mencerminkan dirimu.
@@ -203,12 +150,11 @@ function RootContent() {
                   <Text
                     style={[
                       styles.heroDescription,
-                      isDesktop &&
-                        styles.heroDescriptionDesktop,
+                      isDesktop && styles.heroDescriptionDesktop,
                     ]}
                   >
-                    Jelajahi berbagai pilihan parfum
-                    untuk setiap karakter dan suasana.
+                    Jelajahi berbagai pilihan parfum untuk setiap karakter dan
+                    suasana.
                   </Text>
                 </View>
 
@@ -216,44 +162,33 @@ function RootContent() {
                 <View
                   style={[
                     styles.bottleContainer,
-                    isDesktop &&
-                      styles.bottleContainerDesktop,
+                    isDesktop && styles.bottleContainerDesktop,
                   ]}
                 >
                   <View style={styles.bottleCap} />
 
                   <LinearGradient
-                    colors={[
-                      "#FFC47D",
-                      "#EC8029",
-                      "#B5400C",
-                    ]}
+                    colors={["#FFC47D", "#EC8029", "#B5400C"]}
                     style={styles.bottle}
                   >
-
-                    <Text style={styles.bottleType}>
-                      EAU DE PARFUM
-                    </Text>
+                    <Image
+                      source={require("../assets/images/parfumku-logo-icon.png")}
+                      style={styles.bottleLogoImage}
+                      resizeMode="contain"
+                    />
                   </LinearGradient>
                 </View>
               </LinearGradient>
 
               {/* FORM LOGIN / REGISTER */}
               <View
-                style={[
-                  styles.formCard,
-                  isDesktop && styles.formCardDesktop,
-                ]}
+                style={[styles.formCard, isDesktop && styles.formCardDesktop]}
               >
-                {!isDesktop && (
-                  <View style={styles.handle} />
-                )}
+                {!isDesktop && <View style={styles.handle} />}
 
                 <View style={styles.formContent}>
                   <Text style={styles.formTitle}>
-                    {isLogin
-                      ? "Selamat Datang"
-                      : "Buat Akun Baru"}
+                    {isLogin ? "Selamat Datang" : "Buat Akun Baru"}
                   </Text>
 
                   <Text style={styles.formSubtitle}>
@@ -264,9 +199,7 @@ function RootContent() {
 
                   {!isLogin && (
                     <View style={styles.inputGroup}>
-                      <Text style={styles.inputLabel}>
-                        Nama lengkap
-                      </Text>
+                      <Text style={styles.inputLabel}>Nama lengkap</Text>
 
                       <View style={styles.inputWrapper}>
                         <Ionicons
@@ -289,16 +222,10 @@ function RootContent() {
                   )}
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>
-                      Email
-                    </Text>
+                    <Text style={styles.inputLabel}>Email</Text>
 
                     <View style={styles.inputWrapper}>
-                      <Ionicons
-                        name="mail-outline"
-                        size={20}
-                        color="#A89A93"
-                      />
+                      <Ionicons name="mail-outline" size={20} color="#A89A93" />
 
                       <TextInput
                         value={email}
@@ -315,9 +242,7 @@ function RootContent() {
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>
-                      Password
-                    </Text>
+                    <Text style={styles.inputLabel}>Password</Text>
 
                     <View style={styles.inputWrapper}>
                       <Ionicons
@@ -340,19 +265,13 @@ function RootContent() {
                       />
 
                       <TouchableOpacity
-                        onPress={() =>
-                          setShowPassword(
-                            (previous) => !previous
-                          )
-                        }
+                        onPress={() => setShowPassword((previous) => !previous)}
                         style={styles.eyeButton}
                         disabled={loading}
                       >
                         <Ionicons
                           name={
-                            showPassword
-                              ? "eye-off-outline"
-                              : "eye-outline"
+                            showPassword ? "eye-off-outline" : "eye-outline"
                           }
                           size={21}
                           color="#A89A93"
@@ -371,28 +290,17 @@ function RootContent() {
                     ]}
                   >
                     <LinearGradient
-                      colors={[
-                        "#F07B24",
-                        "#B63B08",
-                      ]}
+                      colors={["#F07B24", "#B63B08"]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
                       style={styles.submitButton}
                     >
                       {loading ? (
-                        <ActivityIndicator
-                          color="#FFFFFF"
-                        />
+                        <ActivityIndicator color="#FFFFFF" />
                       ) : (
                         <>
-                          <Text
-                            style={
-                              styles.submitButtonText
-                            }
-                          >
-                            {isLogin
-                              ? "Masuk Sekarang"
-                              : "Daftar Sekarang"}
+                          <Text style={styles.submitButtonText}>
+                            {isLogin ? "Masuk Sekarang" : "Daftar Sekarang"}
                           </Text>
 
                           <Ionicons
@@ -407,9 +315,7 @@ function RootContent() {
 
                   <View style={styles.switchContainer}>
                     <Text style={styles.switchText}>
-                      {isLogin
-                        ? "Belum punya akun?"
-                        : "Sudah punya akun?"}
+                      {isLogin ? "Belum punya akun?" : "Sudah punya akun?"}
                     </Text>
 
                     <TouchableOpacity
@@ -423,8 +329,8 @@ function RootContent() {
                   </View>
 
                   <Text style={styles.footerText}>
-                    Dengan melanjutkan, kamu menyetujui
-                    ketentuan layanan ParfumKu.
+                    Dengan melanjutkan, kamu menyetujui ketentuan layanan
+                    ParfumKu.
                   </Text>
                 </View>
               </View>
@@ -490,10 +396,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#090706",
   },
 
-brandLogoImage: {
-  width: 240,
-  height: 100,
-},
+  bottleLogoImage: {
+    width: 72,
+    height: 52,
+  },
 
   scrollContentDesktop: {
     justifyContent: "center",
@@ -548,21 +454,9 @@ brandLogoImage: {
     backgroundColor: "rgba(255,255,255,0.08)",
   },
 
-  brand: {
-    flexDirection: "row",
-    alignItems: "center",
-    zIndex: 2,
-  },
-
-  brandText: {
-    color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "800",
-  },
-
   heroContent: {
     width: "67%",
-    marginTop: 38,
+    marginTop: 138,
     zIndex: 2,
   },
 
@@ -616,10 +510,7 @@ brandLogoImage: {
   bottleContainerDesktop: {
     right: 70,
     bottom: 95,
-    transform: [
-      { rotate: "7deg" },
-      { scale: 1.4 },
-    ],
+    transform: [{ rotate: "7deg" }, { scale: 1.4 }],
   },
 
   bottleCap: {
@@ -640,20 +531,6 @@ brandLogoImage: {
     borderColor: "rgba(255,235,210,0.55)",
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  bottleBrand: {
-    color: "#4D1906",
-    fontSize: 10,
-    fontWeight: "900",
-    marginTop: 7,
-  },
-
-  bottleType: {
-    color: "#6C2609",
-    fontSize: 7,
-    fontWeight: "700",
-    marginTop: 3,
   },
 
   formCard: {

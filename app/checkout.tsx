@@ -19,6 +19,7 @@ export default function CheckoutScreen() {
     fetchPaymentMethods,
     user,
     createPaymentMethod,
+    savedAddresses = [],
   } = useShop();
   const router = useRouter();
 
@@ -95,6 +96,19 @@ export default function CheckoutScreen() {
           numberOfLines={3}
           style={styles.textArea}
         />
+        {savedAddresses.length > 0 && (
+          <View style={styles.savedAddressList}>
+            {savedAddresses.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.savedAddressChip}
+                onPress={() => setAddress(item.address)}
+              >
+                <Text style={styles.savedAddressText}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* 3. Seleksi Opsi Metode Pembayaran (Real API Data) */}
@@ -171,6 +185,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlignVertical: "top",
     marginTop: 4,
+  },
+  savedAddressList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  savedAddressChip: {
+    backgroundColor: "#F8F3ED",
+    borderWidth: 1,
+    borderColor: "#E8DDD2",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  savedAddressText: {
+    color: "#8A4E2A",
+    fontWeight: "800",
+    fontSize: 11,
   },
   paymentOption: {
     padding: 12,
